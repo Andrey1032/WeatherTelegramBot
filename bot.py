@@ -8,10 +8,9 @@ from datetime import date
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")  # '4X6CBNA8AWJG45VGD2DEGLQSV'
+WEATHER_API_KEY = '4X6CBNA8AWJG45VGD2DEGLQSV'
 
-# '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
-TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TG_BOT_TOKEN = '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
 
 PROXIES = {
     "http": "http://proxy.net.osu.ru:3128",
@@ -77,40 +76,39 @@ WEATHER_COMMANDS = {
     "Показать погоду": "get_weather",
     "Настроить ежедневные уведомления": "notifications",
 }
-if TG_BOT_TOKEN:
-    bot = TeleBot(TG_BOT_TOKEN)
+bot = TeleBot(TG_BOT_TOKEN)
 
-    @bot.message_handler(commands=['start'])
-    def send_welcome(message):
-        markup = ReplyKeyboardMarkup(row_width=2)
-        for command in WEATHER_COMMANDS.keys():
-            item_button = KeyboardButton(command)
-            markup.add(item_button)
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    markup = ReplyKeyboardMarkup(row_width=2)
+    for command in WEATHER_COMMANDS.keys():
+        item_button = KeyboardButton(command)
+        markup.add(item_button)
 
-    @bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
-    def send_weather(message):
-        weather_command = WEATHER_COMMANDS[message.text]
-        if weather_command == WEATHER_COMMANDS["Показать погоду"]:
-            dateToday = str(date.today())
-            weather = get_weather_from_api(
-                date=dateToday, city="Оренбург")
-            weather_str = json.dumps(weather, indent=4, ensure_ascii=False)
-            bot.send_message(
-                message.chat.id, f'<pre>{weather_str}</pre>', parse_mode="HTML")
+@bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
+def send_weather(message):
+    weather_command = WEATHER_COMMANDS[message.text]
+    if weather_command == WEATHER_COMMANDS["Показать погоду"]:
+        dateToday = str(date.today())
+        weather = get_weather_from_api(
+            date=dateToday, city="Оренбург")
+        weather_str = json.dumps(weather, indent=4, ensure_ascii=False)
+        bot.send_message(
+            message.chat.id, f'<pre>{weather_str}</pre>', parse_mode="HTML")
 
-    @bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
-    def send_notifications(message):
-        weather_command = WEATHER_COMMANDS[message.text]
-        if weather_command == WEATHER_COMMANDS["Настроить ежедневные уведомления"]:
-            bot.send_message(
-                message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
+@bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
+def send_notifications(message):
+    weather_command = WEATHER_COMMANDS[message.text]
+    if weather_command == WEATHER_COMMANDS["Настроить ежедневные уведомления"]:
+        bot.send_message(
+            message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
-    @bot.message_handler(func=lambda message: len(message.text.split(":")) == 2)
-    def add_notifications(message):
-        every().day.at(message.text).do(lambda: send_weather(
-            message={"text": "Показать погоду"}))
+@bot.message_handler(func=lambda message: len(message.text.split(":")) == 2)
+def add_notifications(message):
+    every().day.at(message.text).do(lambda: send_weather(
+        message={"text": "Показать погоду"}))
 
-    bot.infinity_polling()
+bot.infinity_polling()
 
-    while True:
-        run_pending()
+while True:
+    run_pending()
