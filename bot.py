@@ -10,7 +10,8 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")  # '4X6CBNA8AWJG45VGD2DEGLQSV'
 
-TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") # '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
+# '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
+TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 PROXIES = {
     "http": "http://proxy.net.osu.ru:3128",
@@ -76,9 +77,8 @@ WEATHER_COMMANDS = {
     "Показать погоду": "get_weather",
     "Настроить ежедневные уведомления": "notifications",
 }
-
-try:
-    bot = TeleBot(TG_BOT_TOKEN or "")
+if TG_BOT_TOKEN:
+    bot = TeleBot(TG_BOT_TOKEN)
 
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
@@ -114,6 +114,3 @@ try:
 
     while True:
         run_pending()
-
-except:
-    print("Ошибка работы бота")
