@@ -32,4 +32,4 @@ jobs:
           docker run --rm \
                      -e TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN \
                      -e WEATHER_API_KEY=$WEATHER_API_KEY \
-                     my-bot-image:latest # Используйте тот же тег, что указан выше
+                     my-bot-image:latest
