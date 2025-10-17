@@ -9,8 +9,8 @@ from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")  # '4X6CBNA8AWJG45VGD2DEGLQSV'
-# '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
-TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+
+TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") # '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
 
 PROXIES = {
     "http": "http://proxy.net.osu.ru:3128",
