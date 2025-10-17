@@ -11,4 +11,4 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Запускаем приложение
-CMD ["python", "main.py"]
+CMD ["python", "bot.py"]
