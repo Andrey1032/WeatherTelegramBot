@@ -29,5 +29,4 @@ jobs:
               env:
                   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} # Передача токена через переменную окружения
                   WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }} # Передача токена через переменную окружения
-              run: |
-                  docker run --rm -e TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN} my-bot-image
+              run: docker run --rm -e TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN} WEATHER_API_KEY=${WEATHER_API_KEY} my-bot-image
