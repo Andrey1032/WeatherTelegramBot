@@ -1,33 +1,35 @@
 name: Deploy Telegram Bot
 
 on:
-    push:
-        branches:
-            - main # Автоматически срабатывает при пушах в главную ветку
+  push:
+    branches:
+      - main # Автоматически срабатывает при пушах в главную ветку
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-            - name: Setup Docker Buildx
-              uses: docker/setup-buildx-action@v2
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-            - name: Build Docker Image
-              uses: docker/build-push-action@v3
-              with:
-                  context: .
-                  file: Dockerfile
-                  load: true
+      - name: Build Docker Image
+        id: build-and-tag # Добавляем ID шага
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          tags: my-bot-image:latest # Здесь задаём имя и тег образа!
+          load: true
 
-            - name: Run Docker Container
-              env:
-                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} # Передача токена через переменную окружения
-                  WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }} # Передача API ключа через переменную окружения
-              run: |
-                docker run --rm \
-                           -e TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN} \
-                           -e WEATHER_API_KEY=${WEATHER_API_KEY} \
-                           my-bot-image
+      - name: Run Docker Container
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+        run: |
+          docker run --rm \
+                     -e TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN \
+                     -e WEATHER_API_KEY=$WEATHER_API_KEY \
+                     my-bot-image:latest # Используйте тот же тег, что указан выше
