@@ -21,11 +21,11 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          tags: weatherBot:latest # Здесь задаём имя и тег образа!
+          tags: weather-bot:latest # Здесь задаём имя и тег образа!
           load: true
 
       - name: Run Docker Container
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
-        run: docker run --rm weatherBot:latest
+        run: docker run --rm weather-bot:latest
