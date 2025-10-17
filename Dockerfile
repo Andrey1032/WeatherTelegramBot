@@ -1,16 +1,14 @@
-# Базовый образ Python
-FROM python:3.10-slim-buster
+# Используем базовый образ Python 3.13
+FROM python:3.13
 
-# Установка базовых инструментов
-RUN apt-get update && \
-    apt-get install -y wget curl git
-
-# Клонируем проект в контейнер
-COPY . /app/
+# Создаем рабочую директорию внутри контейнера
 WORKDIR /app
 
-# Устанавливаем зависимости
+# Копируем файлы проекта внутрь рабочей директории
+COPY . .
+
+# Устанавливаем зависимости из файла requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Команда для старта приложения
-CMD ["python", "bot.py"]
+# Запускаем приложение
+CMD ["python", "main.py"]
