@@ -77,6 +77,8 @@ WEATHER_COMMANDS = {
     "Настроить ежедневные уведомления": "notifications",
 }
 bot = TeleBot(TG_BOT_TOKEN)
+bot.polling(skip_pending=True)
+
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -84,6 +86,7 @@ def send_welcome(message):
     for command in WEATHER_COMMANDS.keys():
         item_button = KeyboardButton(command)
         markup.add(item_button)
+
 
 @bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
 def send_weather(message):
@@ -96,6 +99,7 @@ def send_weather(message):
         bot.send_message(
             message.chat.id, f'<pre>{weather_str}</pre>', parse_mode="HTML")
 
+
 @bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
 def send_notifications(message):
     weather_command = WEATHER_COMMANDS[message.text]
@@ -103,12 +107,17 @@ def send_notifications(message):
         bot.send_message(
             message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
+
 @bot.message_handler(func=lambda message: len(message.text.split(":")) == 2)
 def add_notifications(message):
     every().day.at(message.text).do(lambda: send_weather(
         message={"text": "Показать погоду"}))
 
-bot.infinity_polling()
+
+try:
+    bot.infinity_polling()
+except Exception as e:
+    print(e)
 
 while True:
     run_pending()
