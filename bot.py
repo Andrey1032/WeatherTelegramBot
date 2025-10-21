@@ -158,7 +158,7 @@ def set_notification_time(message):
         return
 
     # Сохраняем новые настройки
-    settings = {"user_id": user_id, "notification_time": notification_time}
+    settings = {"user_id": user_id, "notification_time": f"{hour-5}:{minute}"}
     save_user_settings(user_id, settings)
     bot.send_message(message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
 
