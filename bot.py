@@ -40,9 +40,11 @@ def load_user_settings(user_id):
 
 def save_user_settings(user_id, settings):
     file_path = os.path.join(USER_SETTINGS_DIR, f"{user_id}.json")
-    with open(file_path, 'w') as file:
-        json.dump(settings, file)
-
+    try:
+        with open(file_path, 'w') as file:
+            json.dump(settings, file)
+    except Exception as e:
+        logging.error(f"Ошибка сохранения настроек пользователя {user_id}: {e}")
 
 def retry(max_attempts=3, delay_seconds=(5, 30)):
     def decorator(func):
