@@ -45,6 +45,7 @@ def save_user_settings(user_id, settings):
     except Exception as e:
         logging.error(f"Ошибка сохранения настроек пользователя {user_id}: {e}")
 
+
 def retry(max_attempts=3, delay_seconds=(5, 30)):
     def decorator(func):
         def wrapper_retry(*args, **kwargs):
@@ -77,6 +78,7 @@ def get_weather_from_api(*, date: str, city: str) -> dict:
 
     result_data = {
         "Адрес": data['resolvedAddress'],
+        "Часовой пояс": data['tzoffset'],
         "Сегодня": {
             "Температура": data["days"][0]["temp"],
             "Макс. температура": data["days"][0]["tempmax"],
@@ -127,6 +129,7 @@ def send_weather(user_id):
 
 def schedule_loop():
     while True:
+        # Планирование уведомлений выполняется ТОЛЬКО ОДИН РАЗ!
         users_with_settings = []
         for filename in os.listdir(USER_SETTINGS_DIR):
             if filename.endswith(".json"):
@@ -134,12 +137,19 @@ def schedule_loop():
                 settings = load_user_settings(user_id)
                 if settings:
                     users_with_settings.append((user_id, settings["notification_time"]))
-
+        
+        # Добавляем уведомления для каждого пользователя только однажды
         for user_id, notification_time in users_with_settings:
             every().day.at(notification_time).do(send_weather, user_id=user_id)
+        
+        # Выход из функции после первого выполнения
+        break
 
+    # Основной цикл для проверки и выполнения заданий
+    while True:
         run_pending()
         time.sleep(1)
+
 
 def subtract_hours(time_str):
     # Преобразуем строку типа '10:02' в объект datetime
@@ -151,6 +161,7 @@ def subtract_hours(time_str):
     # Возвращаем обратно в формат 'ЧЧ:ММ'
     return new_time.strftime('%H:%M:%S')
 
+
 def set_notification_time(message):
     user_id = message.from_user.id
     notification_time = message.text.strip()
@@ -160,8 +171,8 @@ def set_notification_time(message):
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
         bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
-    hour, minute = map(str, parts)
-    if not (0 <= int(hour) < 24 and 0 <= int(minute) < 60):
+    hour, minute = map(int, parts)
+    if not (0 <= hour < 24 and 0 <= minute < 60):
         bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
 
