@@ -128,8 +128,10 @@ def send_weather(user_id):
 
 
 def schedule_loop():
-    while True:
-        # Планирование уведомлений выполняется ТОЛЬКО ОДИН РАЗ!
+    scheduled_jobs = {}
+
+    def update_schedules():
+        nonlocal scheduled_jobs
         users_with_settings = []
         for filename in os.listdir(USER_SETTINGS_DIR):
             if filename.endswith(".json"):
@@ -137,16 +139,20 @@ def schedule_loop():
                 settings = load_user_settings(user_id)
                 if settings:
                     users_with_settings.append((user_id, settings["notification_time"]))
-        
-        # Добавляем уведомления для каждого пользователя только однажды
-        for user_id, notification_time in users_with_settings:
-            every().day.at(notification_time).do(send_weather, user_id=user_id)
-        
-        # Выход из функции после первого выполнения
-        break
 
-    # Основной цикл для проверки и выполнения заданий
+        # Обновляем существующие задания и добавляем новые
+        for user_id, notification_time in users_with_settings:
+            job_key = f"{user_id}-{notification_time}"
+            if job_key not in scheduled_jobs:
+                job = every().day.at(notification_time).do(send_weather, user_id=user_id)
+                scheduled_jobs[job_key] = job
+            else:
+                existing_job = scheduled_jobs.pop(job_key, None)
+                if existing_job is not None:
+                    existing_job.cancel()
+
     while True:
+        update_schedules()
         run_pending()
         time.sleep(1)
 
