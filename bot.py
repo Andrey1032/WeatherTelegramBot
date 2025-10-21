@@ -9,14 +9,12 @@ from datetime import date
 from threading import Thread
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
-from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 
 logging.basicConfig(filename='bot.log', level=logging.INFO,
                     format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
-load_dotenv()
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
+WEATHER_API_KEY = "4X6CBNA8AWJG45VGD2DEGLQSV"
+TG_BOT_TOKEN = "7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc"
 
 USER_SETTINGS_DIR = "./user_settings/"
 os.makedirs(USER_SETTINGS_DIR, exist_ok=True)
