@@ -117,7 +117,10 @@ def set_notification_time(message):
         bot.send_message(
             message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
-    every().day.at(f'{int(parts[0]) - 2}:{parts[1]}').do(send_weather, message=message)
+    every().day.at(
+        f'{int(parts[0]) - 2}:{parts[1]}').do(send_weather, message=message)
+    print(f'{int(parts[0]) - 2}:{parts[1]}')
+    logging.error(f'{int(parts[0]) - 2}:{parts[1]}')
     bot.send_message(
         message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
 
@@ -129,6 +132,7 @@ WEATHER_COMMANDS = {
 
 bot = TeleBot(TG_BOT_TOKEN)
 
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -138,6 +142,7 @@ def send_welcome(message):
     bot.send_message(
         message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
 
+
 @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
 def handle_commands(message):
     if message.text == "Показать погоду":
@@ -146,11 +151,11 @@ def handle_commands(message):
         bot.send_message(
             message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
+
 @bot.message_handler(func=lambda m: len(m.text.split(":")) == 2)
 def handle_set_notifications(message):
     set_notification_time(message)
 
+
 start_schedule_thread()
 bot.infinity_polling()
-
-
