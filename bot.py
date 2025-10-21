@@ -1,3 +1,4 @@
+import sys
 import requests
 import time
 import json
@@ -11,8 +12,17 @@ from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from apscheduler.schedulers.background import BackgroundScheduler
 
-logging.basicConfig(filename='bot.log', level=logging.INFO,
-                    format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
+# Настройка логгера: запись в файл + вывод в консоль
+log_formatter = logging.Formatter('%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
+file_handler = logging.FileHandler('bot.log')
+console_handler = logging.StreamHandler(sys.stdout)
+
+for handler in [file_handler, console_handler]:
+    handler.setFormatter(log_formatter)
+    logging.root.addHandler(handler)
+
+logging.root.setLevel(logging.INFO)
+
 WEATHER_API_KEY = "4X6CBNA8AWJG45VGD2DEGLQSV"
 TG_BOT_TOKEN = "7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc"
 
@@ -44,13 +54,10 @@ def retry(max_attempts=3, delay_seconds=(5, 30)):
                 except RequestException as e:
                     attempts += 1
                     if attempts > max_attempts:
-                        raise Exception(
-                            "Максимальное количество попыток превышено.")
+                        raise Exception("Максимальное количество попыток превышено.")
                     else:
-                        logging.error(
-                            f"Ошибка при выполнении запроса ({attempts}). Ошибка: {e}")
-                        print(
-                            f"Ошибка при выполнении запроса ({attempts}). Повторная попытка через {delay_seconds[attempts-1]} сек...")
+                        logging.error(f"Ошибка при выполнении запроса ({attempts}). Ошибка: {e}")
+                        print(f"Ошибка при выполнении запроса ({attempts}). Повторная попытка через {delay_seconds[attempts-1]} сек...")
                         time.sleep(delay_seconds[attempts-1])
         return wrapper_retry
     return decorator
@@ -95,8 +102,7 @@ def start_schedule_thread():
 def send_weather(user_id):
     today_date = str(date.today())
     try:
-        weather = get_weather_from_api(
-            date=today_date, city="Оренбург")
+        weather = get_weather_from_api(date=today_date, city="Оренбург")
         result = [
             f"Погода в городе {weather['Адрес']}:",
             f"Сегодня:\n"
@@ -126,8 +132,7 @@ def schedule_loop():
                 user_id = int(filename[:-5])  # Удаляем расширение .json
                 settings = load_user_settings(user_id)
                 if settings:
-                    users_with_settings.append(
-                        (user_id, settings["notification_time"]))
+                    users_with_settings.append((user_id, settings["notification_time"]))
 
         for user_id, notification_time in users_with_settings:
             every().day.at(notification_time).do(send_weather, user_id=user_id)
@@ -143,20 +148,17 @@ def set_notification_time(message):
 
     # Проверка правильности ввода времени
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
-        bot.send_message(
-            message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
+        bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
     hour, minute = map(int, parts)
     if not (0 <= hour < 24 and 0 <= minute < 60):
-        bot.send_message(
-            message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
+        bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
 
     # Сохраняем новые настройки
     settings = {"user_id": user_id, "notification_time": notification_time}
     save_user_settings(user_id, settings)
-    bot.send_message(
-        message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
+    bot.send_message(message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
 
 
 WEATHER_COMMANDS = {
@@ -172,8 +174,7 @@ def send_welcome(message):
     for command in WEATHER_COMMANDS.keys():
         item_button = KeyboardButton(command)
         markup.add(item_button)
-    bot.send_message(
-        message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
 
 
 @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
@@ -181,8 +182,7 @@ def handle_commands(message):
     if message.text == "Показать погоду":
         send_weather(message.from_user.id)
     elif message.text == "Настроить ежедневные уведомления":
-        bot.send_message(
-            message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
+        bot.send_message(message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
 
 @bot.message_handler(func=lambda m: len(m.text.split(":")) == 2)
