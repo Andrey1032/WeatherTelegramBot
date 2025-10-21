@@ -92,14 +92,11 @@ def start_schedule_thread():
     thread.start()
 
 
-def send_weather_to_user(user_id):
-    settings = load_user_settings(user_id)
-    if settings is None:
-        return
+def send_weather(user_id):
     today_date = str(date.today())
     try:
         weather = get_weather_from_api(
-            date=today_date, city=settings.get("last_city", "Оренбург"))
+            date=today_date, city="Оренбург")
         result = [
             f"Погода в городе {weather['Адрес']}:",
             f"Сегодня:\n"
@@ -133,7 +130,7 @@ def schedule_loop():
                         (user_id, settings["notification_time"]))
 
         for user_id, notification_time in users_with_settings:
-            every().day.at(notification_time).do(send_weather_to_user, user_id=user_id)
+            every().day.at(notification_time).do(send_weather, user_id=user_id)
 
         run_pending()
         time.sleep(1)
@@ -182,7 +179,7 @@ def send_welcome(message):
 @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
 def handle_commands(message):
     if message.text == "Показать погоду":
-        send_weather_to_user(message.from_user.id)
+        send_weather(message.from_user.id)
     elif message.text == "Настроить ежедневные уведомления":
         bot.send_message(
             message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
