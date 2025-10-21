@@ -117,10 +117,10 @@ def set_notification_time(message):
         bot.send_message(
             message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
+    print(f'{hour - 2}:{minute}')
+    logging.error(f'{hour - 2}:{minute}')
     every().day.at(
-        f'{int(parts[0]) - 2}:{parts[1]}').do(send_weather, message=message)
-    print(f'{int(parts[0]) - 2}:{parts[1]}')
-    logging.error(f'{int(parts[0]) - 2}:{parts[1]}')
+        f'{hour - 2}:{minute}').do(send_weather, message=message)
     bot.send_message(
         message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
 
