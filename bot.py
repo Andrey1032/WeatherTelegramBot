@@ -5,42 +5,54 @@ import json
 from schedule import every, run_pending
 from requests.exceptions import RequestException
 from datetime import date
+from threading import Thread
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+import logging
 
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")  # '4X6CBNA8AWJG45VGD2DEGLQSV'
-# '7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc'
+logging.basicConfig(filename='bot.log', level=logging.INFO,
+                    format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
+
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-PROXIES = {
-    "http": "http://proxy.net.osu.ru:3128",
-    "https": "http://proxy.net.osu.ru:3128"
-}
+# По умолчанию без прокси, проверьте использование корпоративных настроек.
+PROXIES = {}
 
 
-def retry(func):
-    def wrapper_retry(*args, **kwargs):
-        retries = [5, 30]
-        for seconds in retries:
-            try:
-                return func(*args, **kwargs)
-            except RequestException:
-                print(f"Failed to get data. Retrying in {seconds} seconds")
-                time.sleep(seconds)
-        return func(*args, **kwargs)
-    return wrapper_retry
+def retry(max_attempts=3, delay_seconds=(5, 30)):
+    def decorator(func):
+        def wrapper_retry(*args, **kwargs):
+            attempts = 0
+            while attempts <= max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except RequestException as e:
+                    attempts += 1
+                    if attempts > max_attempts:
+                        raise Exception(
+                            "Максимальное количество попыток превышено.")
+                    else:
+                        logging.error(
+                            f"Ошибка при выполнении запроса ({attempts}). Ошибка: {e}")
+                        print(
+                            f"Ошибка при выполнении запроса ({attempts}). Повторная попытка через {delay_seconds[attempts-1]} сек...")
+                        time.sleep(delay_seconds[attempts-1])
+        return wrapper_retry
+    return decorator
 
 
-@retry
+@retry(max_attempts=3, delay_seconds=(5, 30))
 def get_weather_from_api(*, date: str, city: str) -> dict:
     url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{city}/{date}/{date}'
-    response = requests.get(url, params={
+    response = requests.get(url, proxies=PROXIES, params={
         "unitGroup": 'metric',
         "lang": "ru",
         "include": "days,alerts,current,events",
         "key": WEATHER_API_KEY
     })
     data = response.json()
+
     result_data = {
         "Адрес": data['resolvedAddress'],
         "Сегодня": {
@@ -54,27 +66,65 @@ def get_weather_from_api(*, date: str, city: str) -> dict:
         "Прямо сейчас": {
             "Температура": data["currentConditions"]["temp"],
             "Влажность": data["currentConditions"]["humidity"],
-            "Ветер": data["days"][0]["windspeed"],
+            "Ветер": data["currentConditions"]["windspeed"],
             "Прогноз": data["currentConditions"]["conditions"]
         },
     }
     return result_data
 
 
-dateToday = str(date.today())
+def start_schedule_thread():
+    thread = Thread(target=schedule_loop)
+    thread.start()
 
 
-# dateToday = str(date.today())
+def schedule_loop():
+    while True:
+        run_pending()
+        time.sleep(1)
 
-# weather_by_days = get_weather_from_api(
-#     date=dateToday, city="Оренбург")
 
-# with open(f"weather_{dateToday}", 'w', encoding='utf-8') as file:
-#     json.dump(weather_by_days, file, indent=4, ensure_ascii=False)
+def send_weather(message):
+    today_date = str(date.today())
+    weather = get_weather_from_api(date=today_date, city="Оренбург")
+    result = [
+        f"Погода в городе {weather['Адрес']}:",
+        f"Сегодня:\n"
+        f"Темп.: {weather['Сегодня']['Температура']}°C\n"
+        f"Макс. темп.: {weather['Сегодня']['Макс. температура']}°C\n"
+        f"Мин. темп.: {weather['Сегодня']['Мин. температура']}°C\n"
+        f"Ветер: {weather['Сегодня']['Ветер']} м/с\n"
+        f"Влажность: {weather['Сегодня']['Влажность']}%\n"
+        f"Описание: {weather['Сегодня']['Прогноз']}\n",
+        f"\nСейчас:\n"
+        f"Темп.: {weather['Прямо сейчас']['Температура']}°C\n"
+        f"Влажность: {weather['Прямо сейчас']['Влажность']}%\n"
+        f"Ветер: {weather['Прямо сейчас']['Ветер']} м/с\n"
+        f"Описание: {weather['Прямо сейчас']['Прогноз']}"
+    ]
+    bot.send_message(message.chat.id, "\n".join(result))
+
+
+def set_notification_time(message):
+    notification_time = message.text.strip()
+    parts = notification_time.split(":")
+    if len(parts) != 2 or not all(part.isdigit() for part in parts):
+        bot.send_message(
+            message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
+        return
+    hour, minute = map(int, parts)
+    if not (0 <= hour < 24 and 0 <= minute < 60):
+        bot.send_message(
+            message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
+        return
+    every().day.at(notification_time).do(send_weather, message=message)
+    bot.send_message(
+        message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
+
 
 WEATHER_COMMANDS = {
     "Показать погоду": "get_weather",
-    "Настроить ежедневные уведомления": "notifications",
+    "Настроить ежедневные уведомления": "set_notifications",
 }
 
 try:
@@ -82,38 +132,28 @@ try:
 
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
-        markup = ReplyKeyboardMarkup(row_width=2)
+        markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         for command in WEATHER_COMMANDS.keys():
             item_button = KeyboardButton(command)
             markup.add(item_button)
+        bot.send_message(
+            message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
 
-    @bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
-    def send_weather(message):
-        weather_command = WEATHER_COMMANDS[message.text]
-        if weather_command == WEATHER_COMMANDS["Показать погоду"]:
-            dateToday = str(date.today())
-            weather = get_weather_from_api(
-                date=dateToday, city="Оренбург")
-            weather_str = json.dumps(weather, indent=4, ensure_ascii=False)
-            bot.send_message(
-                message.chat.id, f'<pre>{weather_str}</pre>', parse_mode="HTML")
-
-    @bot.message_handler(func=lambda message: message.text in WEATHER_COMMANDS.keys())
-    def send_notifications(message):
-        weather_command = WEATHER_COMMANDS[message.text]
-        if weather_command == WEATHER_COMMANDS["Настроить ежедневные уведомления"]:
+    @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
+    def handle_commands(message):
+        if message.text == "Показать погоду":
+            send_weather(message)
+        elif message.text == "Настроить ежедневные уведомления":
             bot.send_message(
                 message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
-    @bot.message_handler(func=lambda message: len(message.text.split(":")) == 2)
-    def add_notifications(message):
-        every().day.at(message.text).do(lambda: send_weather(
-            message={"text": "Показать погоду"}))
+    @bot.message_handler(func=lambda m: len(m.text.split(":")) == 2)
+    def handle_set_notifications(message):
+        set_notification_time(message)
 
+    start_schedule_thread()
     bot.infinity_polling()
 
-    while True:
-        run_pending()
-
-except:
+except Exception as e:
+    logging.error(f"Ошибка работы бота: {e}")
     print("Ошибка работы бота")
