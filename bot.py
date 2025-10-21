@@ -143,7 +143,7 @@ def schedule_loop():
 
 def subtract_hours(time_str):
     # Преобразуем строку типа '10:02' в объект datetime
-    time_obj = datetime.strptime(time_str, '%H:%M:%S')
+    time_obj = datetime.strptime(time_str+":00", '%H:%M:%S')
     
     # Отнимаем 5 часов
     new_time = time_obj - timedelta(hours=5)
