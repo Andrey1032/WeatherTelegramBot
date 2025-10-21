@@ -13,8 +13,8 @@ import logging
 logging.basicConfig(filename='bot.log', level=logging.INFO,
                     format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
 
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEATHER_API_KEY = "4X6CBNA8AWJG45VGD2DEGLQSV"
+TG_BOT_TOKEN = "7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc"
 
 # По умолчанию без прокси, проверьте использование корпоративных настроек.
 PROXIES = {}
@@ -127,33 +127,30 @@ WEATHER_COMMANDS = {
     "Настроить ежедневные уведомления": "set_notifications",
 }
 
-try:
-    bot = TeleBot(TG_BOT_TOKEN or "")
+bot = TeleBot(TG_BOT_TOKEN)
 
-    @bot.message_handler(commands=['start'])
-    def send_welcome(message):
-        markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        for command in WEATHER_COMMANDS.keys():
-            item_button = KeyboardButton(command)
-            markup.add(item_button)
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    for command in WEATHER_COMMANDS.keys():
+        item_button = KeyboardButton(command)
+        markup.add(item_button)
+    bot.send_message(
+        message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
+
+@bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
+def handle_commands(message):
+    if message.text == "Показать погоду":
+        send_weather(message)
+    elif message.text == "Настроить ежедневные уведомления":
         bot.send_message(
-            message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
+            message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
-    @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
-    def handle_commands(message):
-        if message.text == "Показать погоду":
-            send_weather(message)
-        elif message.text == "Настроить ежедневные уведомления":
-            bot.send_message(
-                message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
+@bot.message_handler(func=lambda m: len(m.text.split(":")) == 2)
+def handle_set_notifications(message):
+    set_notification_time(message)
 
-    @bot.message_handler(func=lambda m: len(m.text.split(":")) == 2)
-    def handle_set_notifications(message):
-        set_notification_time(message)
+start_schedule_thread()
+bot.infinity_polling()
 
-    start_schedule_thread()
-    bot.infinity_polling()
 
-except Exception as e:
-    logging.error(f"Ошибка работы бота: {e}")
-    print("Ошибка работы бота")
