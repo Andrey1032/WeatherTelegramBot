@@ -149,7 +149,7 @@ def subtract_hours(time_str):
     new_time = time_obj - timedelta(hours=5)
     
     # Возвращаем обратно в формат 'ЧЧ:ММ'
-    return new_time.strftime('%H:%M')
+    return new_time.strftime('%H:%M:%S')
 
 def set_notification_time(message):
     user_id = message.from_user.id
