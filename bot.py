@@ -6,11 +6,10 @@ import os
 import logging
 from schedule import every, run_pending
 from requests.exceptions import RequestException
-from datetime import date
+from datetime import date, datetime, timedelta
 from threading import Thread
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
-from apscheduler.schedulers.background import BackgroundScheduler
 
 # Настройка логгера: запись в файл + вывод в консоль
 log_formatter = logging.Formatter('%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
@@ -142,6 +141,15 @@ def schedule_loop():
         run_pending()
         time.sleep(1)
 
+def subtract_hours(time_str):
+    # Преобразуем строку типа '10:02' в объект datetime
+    time_obj = datetime.strptime(time_str, '%H:%M')
+    
+    # Отнимаем 5 часов
+    new_time = time_obj - timedelta(hours=5)
+    
+    # Возвращаем обратно в формат 'ЧЧ:ММ'
+    return new_time.strftime('%H:%M')
 
 def set_notification_time(message):
     user_id = message.from_user.id
@@ -152,13 +160,13 @@ def set_notification_time(message):
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
         bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
-    hour, minute = map(int, parts)
-    if not (0 <= hour < 24 and 0 <= minute < 60):
+    hour, minute = map(str, parts)
+    if not (0 <= int(hour) < 24 and 0 <= int(minute) < 60):
         bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
 
     # Сохраняем новые настройки
-    settings = {"user_id": user_id, "notification_time": f"{hour-5}:{minute}"}
+    settings = {"user_id": user_id, "notification_time": subtract_hours(notification_time)}
     save_user_settings(user_id, settings)
     bot.send_message(message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
 
