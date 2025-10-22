@@ -7,6 +7,8 @@ COPY requirements.txt ./
 # Установливаем требуемые зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+# Копируем остальные файлы приложения
+COPY src ./src
+COPY main.py .
 # Запуск приложения
-CMD ["python", "bot.py"]
+CMD ["python", "-u", "main.py"]

@@ -12,7 +12,8 @@ from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 # Настройка логгера: запись в файл + вывод в консоль
-log_formatter = logging.Formatter('%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
+log_formatter = logging.Formatter(
+    '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s')
 file_handler = logging.FileHandler('bot.log')
 console_handler = logging.StreamHandler(sys.stdout)
 
@@ -25,7 +26,7 @@ logging.root.setLevel(logging.INFO)
 WEATHER_API_KEY = "4X6CBNA8AWJG45VGD2DEGLQSV"
 TG_BOT_TOKEN = "7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc"
 
-USER_SETTINGS_DIR = "./user_settings/"
+USER_SETTINGS_DIR = "./data/user_settings/"
 os.makedirs(USER_SETTINGS_DIR, exist_ok=True)
 
 
@@ -43,7 +44,8 @@ def save_user_settings(user_id, settings):
         with open(file_path, 'w') as file:
             json.dump(settings, file)
     except Exception as e:
-        logging.error(f"Ошибка сохранения настроек пользователя {user_id}: {e}")
+        logging.error(
+            f"Ошибка сохранения настроек пользователя {user_id}: {e}")
 
 
 def retry(max_attempts=3, delay_seconds=(5, 30)):
@@ -56,10 +58,13 @@ def retry(max_attempts=3, delay_seconds=(5, 30)):
                 except RequestException as e:
                     attempts += 1
                     if attempts > max_attempts:
-                        raise Exception("Максимальное количество попыток превышено.")
+                        raise Exception(
+                            "Максимальное количество попыток превышено.")
                     else:
-                        logging.error(f"Ошибка при выполнении запроса ({attempts}). Ошибка: {e}")
-                        print(f"Ошибка при выполнении запроса ({attempts}). Повторная попытка через {delay_seconds[attempts-1]} сек...")
+                        logging.error(
+                            f"Ошибка при выполнении запроса ({attempts}). Ошибка: {e}")
+                        print(
+                            f"Ошибка при выполнении запроса ({attempts}). Повторная попытка через {delay_seconds[attempts-1]} сек...")
                         time.sleep(delay_seconds[attempts-1])
         return wrapper_retry
     return decorator
@@ -130,29 +135,27 @@ def send_weather(user_id):
 def schedule_loop():
     scheduled_jobs = {}
 
-    def update_schedules():
-        nonlocal scheduled_jobs
-        users_with_settings = []
-        for filename in os.listdir(USER_SETTINGS_DIR):
-            if filename.endswith(".json"):
-                user_id = int(filename[:-5])  # Удаляем расширение .json
-                settings = load_user_settings(user_id)
-                if settings:
-                    users_with_settings.append((user_id, settings["notification_time"]))
+    users_with_settings = []
+    for filename in os.listdir(USER_SETTINGS_DIR):
+        if filename.endswith(".json"):
+            user_id = int(filename[:-5])  # Удаляем расширение .json
+            settings = load_user_settings(user_id)
+            if settings:
+                users_with_settings.append(
+                    (user_id, settings["notification_time"]))
 
-        # Обновляем существующие задания и добавляем новые
-        for user_id, notification_time in users_with_settings:
-            job_key = f"{user_id}-{notification_time}"
-            if job_key not in scheduled_jobs:
-                job = every().day.at(notification_time).do(send_weather, user_id=user_id)
-                scheduled_jobs[job_key] = job
-            else:
-                existing_job = scheduled_jobs.pop(job_key, None)
-                if existing_job is not None:
-                    existing_job.cancel()
+    # Обновляем существующие задания и добавляем новые
+    for user_id, notification_time in users_with_settings:
+        job_key = f"{user_id}-{notification_time}"
+        if job_key not in scheduled_jobs:
+            job = every().day.at(notification_time).do(send_weather, user_id=user_id)
+            scheduled_jobs[job_key] = job
+        else:
+            existing_job = scheduled_jobs.pop(job_key, None)
+            if existing_job is not None:
+                existing_job.cancel()
 
     while True:
-        update_schedules()
         run_pending()
         time.sleep(1)
 
@@ -160,10 +163,10 @@ def schedule_loop():
 def subtract_hours(time_str):
     # Преобразуем строку типа '10:02' в объект datetime
     time_obj = datetime.strptime(time_str+":00", '%H:%M:%S')
-    
+
     # Отнимаем 5 часов
     new_time = time_obj - timedelta(hours=5)
-    
+
     # Возвращаем обратно в формат 'ЧЧ:ММ'
     return new_time.strftime('%H:%M:%S')
 
@@ -175,17 +178,21 @@ def set_notification_time(message):
 
     # Проверка правильности ввода времени
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
-        bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
+        bot.send_message(
+            message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
     hour, minute = map(int, parts)
     if not (0 <= hour < 24 and 0 <= minute < 60):
-        bot.send_message(message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
+        bot.send_message(
+            message.chat.id, "Некорректный формат времени. Введите ЧЧ:ММ.")
         return
 
     # Сохраняем новые настройки
-    settings = {"user_id": user_id, "notification_time": subtract_hours(notification_time)}
+    settings = {"user_id": user_id,
+                "notification_time": subtract_hours(notification_time)}
     save_user_settings(user_id, settings)
-    bot.send_message(message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
+    bot.send_message(
+        message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
 
 
 WEATHER_COMMANDS = {
@@ -201,7 +208,8 @@ def send_welcome(message):
     for command in WEATHER_COMMANDS.keys():
         item_button = KeyboardButton(command)
         markup.add(item_button)
-    bot.send_message(message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
+    bot.send_message(
+        message.chat.id, "Добро пожаловать! Выберите команду:", reply_markup=markup)
 
 
 @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
@@ -209,7 +217,8 @@ def handle_commands(message):
     if message.text == "Показать погоду":
         send_weather(message.from_user.id)
     elif message.text == "Настроить ежедневные уведомления":
-        bot.send_message(message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
+        bot.send_message(
+            message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
 
 @bot.message_handler(func=lambda m: len(m.text.split(":")) == 2)

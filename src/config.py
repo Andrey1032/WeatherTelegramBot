@@ -1,0 +1,7 @@
+import os
+
+WEATHER_API_KEY = "4X6CBNA8AWJG45VGD2DEGLQSV"
+TG_BOT_TOKEN = "7210067939:AAEWk5gO6OJIcUYLFvuNgygYa2m3XeLVUdc"
+USER_SETTINGS_DIR = "./data/user_settings/"
+
+os.makedirs(USER_SETTINGS_DIR, exist_ok=True)
