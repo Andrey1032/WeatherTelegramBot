@@ -1,4 +1,4 @@
-from logger import *
+from src.logger import *
 from telegram_bot import bot
 from scheduler import start_schedule_thread
 
