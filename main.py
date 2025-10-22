@@ -1,6 +1,6 @@
 from src.logger import *
-from telegram_bot import bot
-from scheduler import start_schedule_thread
+from src.telegram_bot import bot
+from src.scheduler import start_schedule_thread
 
 if __name__ == "__main__":
     start_schedule_thread()
