@@ -1,6 +1,6 @@
 import requests
-from config import WEATHER_API_KEY
-from utils import retry
+from src.config import WEATHER_API_KEY
+from src.utils import retry
 
 @retry(max_attempts=3, delay_seconds=(5, 30))
 def get_weather_from_api(*, date: str, city: str) -> dict:

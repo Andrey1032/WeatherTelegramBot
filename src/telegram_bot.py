@@ -1,7 +1,7 @@
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
-from config import TG_BOT_TOKEN
-from scheduler import (
+from src.config import TG_BOT_TOKEN
+from src.scheduler import (
     save_user_settings,
     subtract_hours,
     send_weather,

@@ -1,24 +1,24 @@
 import os
 import json
 import time
+import logging
 from datetime import date 
 from requests.exceptions import RequestException
-import logging
 from schedule import every, run_pending
 from threading import Thread
-from telegram_bot import bot
-import config
+from src.telegram_bot import bot
+from src.config import USER_SETTINGS_DIR
 from api_client import get_weather_from_api
 
 def load_user_settings(user_id):
-    file_path = os.path.join(config.USER_SETTINGS_DIR, f"{user_id}.json")
+    file_path = os.path.join(USER_SETTINGS_DIR, f"{user_id}.json")
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             return json.load(file)
     return None
 
 def save_user_settings(user_id, settings):
-    file_path = os.path.join(config.USER_SETTINGS_DIR, f"{user_id}.json")
+    file_path = os.path.join(USER_SETTINGS_DIR, f"{user_id}.json")
     try:
         with open(file_path, 'w') as file:
             json.dump(settings, file)
@@ -57,7 +57,7 @@ def schedule_loop():
     scheduled_jobs = {}
 
     users_with_settings = []
-    for filename in os.listdir(config.USER_SETTINGS_DIR):
+    for filename in os.listdir(USER_SETTINGS_DIR):
         if filename.endswith(".json"):
             user_id = int(filename[:-5])  # Удаляем расширение .json
             settings = load_user_settings(user_id)
