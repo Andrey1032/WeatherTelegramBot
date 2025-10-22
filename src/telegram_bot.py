@@ -1,13 +1,10 @@
-import logging
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from src.config import TG_BOT_TOKEN
-from datetime import date 
-from requests.exceptions import RequestException
-from src.api_client import get_weather_from_api
 from src.scheduler import (
     save_user_settings,
     subtract_hours,
+    send_weather,
     start_schedule_thread
 )
 
@@ -29,7 +26,7 @@ def send_welcome(message):
 @bot.message_handler(func=lambda m: m.text in WEATHER_COMMANDS.keys())
 def handle_commands(message):
     if message.text == "Показать погоду":
-        send_weather(message.from_user.id)
+        send_weather(bot, message.from_user.id)
     elif message.text == "Настроить ежедневные уведомления":
         bot.send_message(message.chat.id, "Введите время (ЧЧ:ММ) в которое хотите получать прогноз погоды")
 
@@ -55,30 +52,6 @@ def set_notification_time(message):
     settings = {"user_id": user_id, "notification_time": subtract_hours(notification_time)}
     save_user_settings(user_id, settings)
     bot.send_message(message.chat.id, f"Уведомления будут приходить ежедневно в {notification_time}.")
-
-def send_weather(user_id):
-    today_date = str(date.today())
-    try:
-        weather = get_weather_from_api(date=today_date, city="Оренбург")
-        result = [
-            f"Погода в городе {weather['Адрес']}:",
-            f"Сегодня:\n"
-            f"Темп.: {weather['Сегодня']['Температура']}°C\n"
-            f"Макс. темп.: {weather['Сегодня']['Макс. температура']}°C\n"
-            f"Мин. темп.: {weather['Сегодня']['Мин. температура']}°C\n"
-            f"Ветер: {weather['Сегодня']['Ветер']} м/с\n"
-            f"Влажность: {weather['Сегодня']['Влажность']}%\n"
-            f"Описание: {weather['Сегодня']['Прогноз']}\n",
-            f"\nСейчас:\n"
-            f"Темп.: {weather['Прямо сейчас']['Температура']}°C\n"
-            f"Влажность: {weather['Прямо сейчас']['Влажность']}%\n"
-            f"Ветер: {weather['Прямо сейчас']['Ветер']} м/с\n"
-            f"Описание: {weather['Прямо сейчас']['Прогноз']}"
-        ]
-        bot.send_message(user_id, "\n".join(result))
-    except RequestException as e:
-        logging.error(f"Ошибка получения погоды: {e}")
-        bot.send_message(user_id, "Возникла ошибка при получении погоды.")
 
 if __name__ == "__main__":
     start_schedule_thread()
