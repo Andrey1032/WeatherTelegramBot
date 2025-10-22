@@ -2,13 +2,9 @@ import os
 import json
 import time
 import logging
-from datetime import date 
-from requests.exceptions import RequestException
 from schedule import every, run_pending
 from threading import Thread
-from src.telegram_bot import bot
 from src.config import USER_SETTINGS_DIR
-from api_client import get_weather_from_api
 
 def load_user_settings(user_id):
     file_path = os.path.join(USER_SETTINGS_DIR, f"{user_id}.json")
@@ -29,29 +25,7 @@ def start_schedule_thread():
     thread = Thread(target=schedule_loop)
     thread.start()
 
-def send_weather(user_id):
-    today_date = str(date.today())
-    try:
-        weather = get_weather_from_api(date=today_date, city="Оренбург")
-        result = [
-            f"Погода в городе {weather['Адрес']}:",
-            f"Сегодня:\n"
-            f"Темп.: {weather['Сегодня']['Температура']}°C\n"
-            f"Макс. темп.: {weather['Сегодня']['Макс. температура']}°C\n"
-            f"Мин. темп.: {weather['Сегодня']['Мин. температура']}°C\n"
-            f"Ветер: {weather['Сегодня']['Ветер']} м/с\n"
-            f"Влажность: {weather['Сегодня']['Влажность']}%\n"
-            f"Описание: {weather['Сегодня']['Прогноз']}\n",
-            f"\nСейчас:\n"
-            f"Темп.: {weather['Прямо сейчас']['Температура']}°C\n"
-            f"Влажность: {weather['Прямо сейчас']['Влажность']}%\n"
-            f"Ветер: {weather['Прямо сейчас']['Ветер']} м/с\n"
-            f"Описание: {weather['Прямо сейчас']['Прогноз']}"
-        ]
-        bot.send_message(user_id, "\n".join(result))
-    except RequestException as e:
-        logging.error(f"Ошибка получения погоды: {e}")
-        bot.send_message(user_id, "Возникла ошибка при получении погоды.")
+
 
 def schedule_loop():
     scheduled_jobs = {}
